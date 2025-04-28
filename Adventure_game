@@ -1,0 +1,282 @@
+import time
+import random
+import sys
+
+
+# --- Classes ---
+class Player:
+    """Manage player stats: score, inventory, streaks, XP, and level."""
+
+    def __init__(self, name):
+        self.name = name
+        self.total_score = 0
+        self.inventory = []
+        self.streak = 0
+        self.xp = 0
+        self.level = 1
+
+    def update_score(self, points):
+        """Update score and handle streak bonus."""
+        self.total_score += points
+        if points > 0:
+            self.streak += 1
+            if self.streak >= 3:
+                print("\nStreak bonus! +5 points!")
+                self.total_score += 5
+                self.streak = 0
+        else:
+            self.streak = 0
+
+    def add_item(self, item):
+        """Add an item to inventory."""
+        if item not in self.inventory:
+            self.inventory.append(item)
+            print(f"\nYou found: {item}")
+
+    def gain_xp(self, amount):
+        """Gain XP and check for level up."""
+        self.xp += amount
+        print(f"You gained {amount} XP!")
+        self.check_level_up()
+
+    def check_level_up(self):
+        """Check if player levels up."""
+        while self.xp >= self.level * 50:
+            self.xp -= self.level * 50
+            self.level += 1
+            print(f"\nCongratulations! You leveled up to Level {self.level}!")
+
+
+def delay_print(message, delay=1):
+    """Print messages with a delay."""
+    print(message)
+    time.sleep(delay)
+
+
+def show_intro():
+    """Show game introduction."""
+    delay_print("=" * 40)
+    delay_print("Welcome, brave adventurer!")
+    delay_print("You awaken in a mystical forest "
+               "where danger and treasures await.")
+    delay_print("Your destiny unfolds with every choice you make.")
+    delay_print("=" * 40)
+    input("\nPress Enter to begin...")
+
+
+def choose_path(player):
+    """Choose adventure path."""
+    delay_print("\nYou face two paths:")
+    delay_print("1. Venture into the dark forest.")
+    delay_print("2. Walk along the misty river.")
+
+    choice = input("Choose 1 or 2: ")
+    while choice not in {"1", "2"}:
+        choice = input("Invalid choice. Choose 1 or 2: ")
+
+    delay_print("\nMaking your decision...", 2)
+
+    if choice == "1":
+        dark_forest(player)
+    else:
+        misty_river(player)
+
+
+def random_event(player):
+    """Trigger a random event."""
+    events = [
+        ("Find a healing herb", 10, "Healing Herb"),
+        ("Step into a trap and lose points", -10, None),
+        ("Meet a wise old man who gifts you "
+         "a magic stone", 15, "Magic Stone"),
+        ("Ambushed by goblins!", -20, None)
+    ]
+    event = random.choice(events)
+
+    delay_print(f"\nEvent: {event[0]}")
+    player.update_score(event[1])
+    if event[2]:
+        player.add_item(event[2])
+
+
+def dark_forest(player):
+    """Handle dark forest path."""
+    delay_print("\nYou enter the dark forest. Shadows move around you.")
+    random_event(player)
+    small_riddle(player)
+
+    delay_print("\nTwo options:")
+    delay_print("1. Investigate a glowing light.")
+    delay_print("2. Hide and observe.")
+
+    choice = input("Choose 1 or 2: ")
+    while choice not in {"1", "2"}:
+        choice = input("Invalid choice. Choose 1 or 2: ")
+
+    if choice == "1":
+        delay_print("\nThe light was a trap! You barely escape.")
+        player.update_score(-5)
+    else:
+        delay_print("\nYou see a treasure chest under a tree.")
+        player.add_item("Ancient Coin")
+        player.update_score(20)
+
+    final_challenge(player)
+
+
+def misty_river(player):
+    """Handle misty river path."""
+    delay_print("\nYou walk along the misty river.")
+    random_event(player)
+    small_riddle(player)
+
+    delay_print("\nTwo options:")
+    delay_print("1. Try to fish for food.")
+    delay_print("2. Build a raft to cross.")
+
+    choice = input("Choose 1 or 2: ")
+    while choice not in {"1", "2"}:
+        choice = input("Invalid choice. Choose 1 or 2: ")
+
+    if choice == "1":
+        success = random.choice([True, False])
+        if success:
+            delay_print("\nYou catch a golden fish!")
+            player.add_item("Golden Fish")
+            player.update_score(15)
+        else:
+            delay_print("\nYou catch nothing and waste time.")
+            player.update_score(-5)
+    else:
+        delay_print("\nYour raft floats you to a hidden cave!")
+        player.add_item("Cave Map")
+        player.update_score(20)
+
+    final_challenge(player)
+
+
+def small_riddle(player):
+    """Present a riddle."""
+    delay_print("\nYou encounter a mystical statue with a riddle.")
+    riddles = [
+        ("What has keys but can't open locks?", "keyboard"),
+        ("What runs but never walks?", "river"),
+        ("The more you take, the more you leave "
+         "behind. What am I?", "footsteps")
+    ]
+    question, answer = random.choice(riddles)
+
+    delay_print(f"Riddle: {question}")
+    guess = input("Your answer: ").lower()
+
+    if guess == answer:
+        delay_print("\nCorrect!")
+        player.update_score(15)
+        player.gain_xp(20)
+    else:
+        delay_print(f"\nWrong! The answer was \"{answer}\".")
+        player.update_score(-5)
+
+
+def final_challenge(player):
+    """Final challenge before boss."""
+    delay_print("\nYou reach the heart of the forest and find a stone gate.")
+
+    action = input("\nDo you OPEN the gate or SEARCH around? "
+                  "(open/search): ").lower()
+    while action not in {"open", "search"}:
+        action = input("Please type \"open\" or \"search\": ").lower()
+
+    if action == "open":
+        outcome = random.choice(["treasure", "trap"])
+        if outcome == "treasure":
+            delay_print("\nYou discover a hidden treasure room!")
+            player.update_score(50)
+        else:
+            delay_print("\nA trap is triggered! You are badly hurt.")
+            player.update_score(-30)
+    else:
+        delay_print("\nYou find a secret path leading to safety.")
+        player.update_score(20)
+
+    boss_battle(player)
+
+
+def boss_battle(player):
+    """Boss battle against the Dark Knight."""
+    delay_print("\nA Dark Knight stands before you!")
+    success_moves = 0
+    fail_moves = 0
+
+    for _ in range(3):
+        delay_print("\nChoose your action:")
+        delay_print("1. Strong Attack")
+        delay_print("2. Defend")
+        delay_print("3. Try to Escape")
+
+        action = input("Choose 1, 2, or 3: ")
+
+        if action == "1":
+            delay_print("\nYou strike a mighty blow!")
+            success_moves += 1
+        elif action == "2":
+            delay_print("\nYou block the knight's heavy strike!")
+            success_moves += 1
+        elif action == "3":
+            delay_print("\nYou attempt to flee... but the knight is too fast!")
+            fail_moves += 1
+        else:
+            delay_print("\nInvalid move! The knight strikes you!")
+            fail_moves += 1
+
+    if success_moves >= 2:
+        delay_print("\nVictory! You have defeated the Dark Knight!")
+        player.update_score(100)
+        player.gain_xp(100)
+        player.add_item("Victory Crown")
+    else:
+        delay_print("\nDefeated... The Dark Knight was too strong.")
+
+    end_game(player)
+
+
+def title_by_score(score):
+    """Return title based on score."""
+    if score >= 150:
+        return "Legendary Hero"
+    elif score >= 100:
+        return "Brave Champion"
+    elif score >= 50:
+        return "Wise Explorer"
+    return "Wandering Survivor"
+
+
+def end_game(player):
+    """Display end game summary."""
+    delay_print("\n=== GAME OVER ===")
+    delay_print(f"Player: {player.name}")
+    delay_print(f"Level: {player.level}")
+    delay_print(f"XP: {player.xp}")
+    delay_print(f"Score: {player.total_score}")
+    delay_print(f"Inventory: {player.inventory}")
+    delay_print(f"Title Earned: {title_by_score(player.total_score)}")
+
+    again = input("\nWould you like to play again? (yes/no): ").lower()
+    if again == "yes":
+        main()
+    else:
+        delay_print("\nThanks for playing! Farewell, adventurer!")
+        sys.exit()
+
+
+def main():
+    """Main function to start the game."""
+    show_intro()
+    name = input("\nWhat is your name, adventurer? ").strip().title()
+    player = Player(name)
+    choose_path(player)
+
+
+if __name__ == "__main__":
+    main()
+
